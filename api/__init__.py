@@ -6,10 +6,12 @@ api_routers = [
     consultation_router,
     task_router,
     knowledge_router,
-    technician_router,
+    tea_master_router,
+    tea_room_router,
+    inventory_router,
     user_behavior_analysis_router,
     user_behavior_analysis_underscore_router
-]心功能API
+]核心功能API
 管理员功能已移至scripts目录
 """
 
@@ -18,7 +20,9 @@ from .appointment import router as appointment_router
 from .consultation import router as consultation_router
 from .task import router as task_router
 from .knowledge import router as knowledge_router
-from .technician import router as technician_router
+from .tea_master import router as tea_master_router
+from .tea_room import router as tea_room_router
+from .inventory import router as inventory_router
 from .user_behavior_analysis import router as user_behavior_analysis_router
 from .user_behavior_analysis import router_underscore as user_behavior_analysis_underscore_router
 
@@ -28,7 +32,9 @@ api_routers = [
     consultation_router,
     task_router,
     knowledge_router,
-    technician_router,
+    tea_master_router,
+    tea_room_router,
+    inventory_router,
     user_behavior_analysis_router,
     user_behavior_analysis_underscore_router
 ]

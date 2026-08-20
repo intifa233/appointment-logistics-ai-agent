@@ -12,8 +12,8 @@ router_underscore = APIRouter(prefix="/api/user_behavior", tags=["用户行为�
 
 class UserAnalysisResponse(BaseModel):
     """用户分析响应"""
-    favorite_technician_id: Optional[int] = None
-    favorite_technician_name: Optional[str] = None
+    favorite_tea_master_id: Optional[int] = None
+    favorite_tea_master_name: Optional[str] = None
     favorite_service: Optional[str] = None
     favorite_duration: Optional[int] = None
     total_appointments: int = 0
@@ -25,25 +25,25 @@ async def get_user_analysis(user_id: str = "default_user") -> UserAnalysisRespon
     """获取用户行为分析数据"""
     try:
         from agents.user_behavior_agent import UserBehaviorAgent
-        
+
         agent = UserBehaviorAgent()
         analysis = agent.get_user_analysis(user_id)
-        
+
         if not analysis:
             return UserAnalysisResponse()
-        
-        # 获取技师姓名
-        technician_name = None
-        if analysis.get('favorite_technician_id'):
-            from db import TechnicianDBRouter
-            db = TechnicianDBRouter()
-            tech_info = db.get_technician_by_id(analysis['favorite_technician_id'])
-            if tech_info:
-                technician_name = tech_info.get('name')
-        
+
+        # 获取茶艺师姓名
+        tea_master_name = None
+        if analysis.get('favorite_tea_master_id'):
+            from db import TeaMasterDBRouter
+            db = TeaMasterDBRouter()
+            tm_info = db.get_tea_master_by_id(analysis['favorite_tea_master_id'])
+            if tm_info:
+                tea_master_name = tm_info.get('name')
+
         return UserAnalysisResponse(
-            favorite_technician_id=analysis.get('favorite_technician_id'),
-            favorite_technician_name=technician_name,
+            favorite_tea_master_id=analysis.get('favorite_tea_master_id'),
+            favorite_tea_master_name=tea_master_name,
             favorite_service=analysis.get('favorite_service'),
             favorite_duration=analysis.get('favorite_duration'),
             total_appointments=analysis.get('total_appointments', 0),
@@ -83,7 +83,7 @@ class ReminderRequest(BaseModel):
 class ReminderResponse(BaseModel):
     """提醒消息响应"""
     message: str
-    technician_available_times: Optional[list] = None
+    tea_master_available_times: Optional[list] = None
 
 
 @router.post("/send-reminder", response_model=ReminderResponse, summary="发送回访提醒")
@@ -91,19 +91,19 @@ async def send_reminder(request: ReminderRequest):
     """生成并返回回访提醒消息"""
     try:
         from agents.user_behavior_agent import UserBehaviorAgent
-        
+
         agent = UserBehaviorAgent()
         result = await agent.get_reminder_with_schedule(request.user_id)
-        
+
         return ReminderResponse(
             message=result["message"],
-            technician_available_times=result["technician_available_times"]
+            tea_master_available_times=result["tea_master_available_times"]
         )
-        
+
     except Exception as e:
         import logging
         logging.error(f"生成回访提醒失败: {e}")
         return ReminderResponse(
-            message="尊敬的Tom，您好！系统暂时无法查询技师时间，请稍后再试或直接联系我们预约。",
-            technician_available_times=[]
+            message="您好！系统暂时无法查询茶艺师时间，请稍后再试或直接联系我们预约。",
+            tea_master_available_times=[]
         )

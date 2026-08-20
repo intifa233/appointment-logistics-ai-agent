@@ -8,34 +8,41 @@ Database Module
 - 会话管理
 """
 
-from .db_router import DatabaseRouter, TechnicianDBRouter, KnowledgeDBRouter
-from .repositories import TechnicianRepository, KnowledgeRepository, UserBehaviorRepository
+from .db_router import DatabaseRouter, TeaMasterDBRouter, TeaRoomDBRouter, InventoryDBRouter, KnowledgeDBRouter
+from .repositories import TeaMasterRepository, TeaRoomRepository, InventoryRepository, KnowledgeRepository, UserBehaviorRepository
 from .base import SessionManager
 from .models import (
-    Base, Technician, TechnicianSchedule, 
+    Base, TeaMaster, TeaMasterSchedule, TeaRoom, TeaRoomSchedule, TeaInventoryItem,
     KnowledgeDocument, UserBehavior, UserPreference, UserRecommendation
 )
 
 __all__ = [
     # 主要入口
     'DatabaseRouter',
-    
+
     # 兼容性路由器
-    'TechnicianDBRouter',
+    'TeaMasterDBRouter',
+    'TeaRoomDBRouter',
+    'InventoryDBRouter',
     'KnowledgeDBRouter',
-    
+
     # Repository模式
-    'TechnicianRepository',
-    'KnowledgeRepository', 
+    'TeaMasterRepository',
+    'TeaRoomRepository',
+    'InventoryRepository',
+    'KnowledgeRepository',
     'UserBehaviorRepository',
-    
+
     # 基础设施
     'SessionManager',
-    
+
     # 数据模型
     'Base',
-    'Technician',
-    'TechnicianSchedule',
+    'TeaMaster',
+    'TeaMasterSchedule',
+    'TeaRoom',
+    'TeaRoomSchedule',
+    'TeaInventoryItem',
     'KnowledgeDocument',
     'UserBehavior',
     'UserPreference',

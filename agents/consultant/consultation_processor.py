@@ -46,19 +46,21 @@ class ConsultationProcessor:
         except Exception as e:
             yield f"[REPLY][咨询机器人]抱歉，处理您的问题时出现了错误：{str(e)}"
     
-    async def handle_unrelated_request(self, user_input: str, unrelated_callback, shared_state) -> AsyncGenerator[str, None]:
-        """处理与咨询无关的请求"""
-        # 重置状态
+    async def handle_unrelated_request(self, user_input: str, shared_state) -> AsyncGenerator[str, None]:
+        """处理咨询分类器判断为"非咨询类"的请求
+
+        注意：这里不会把请求转发回归类机器人。归类机器人正是把这条消息路由到咨询
+        机器人的一方——如果咨询机器人再把它转发回去，遇到两边分类结果持续不一致的
+        输入（例如缺乏上下文的短句），会在"归类为咨询任务"和"咨询机器人判定不是
+        咨询类问题"之间无限反复调用LLM，形成死循环并持续消耗API配额。
+        直接给出兜底回复并把状态交还给分类器即可，不再自动转发。
+        """
+        # 重置状态，允许下一轮重新分类
         if shared_state:
             from config.constants import StateEnum
             shared_state.value = StateEnum.CLASSIFY
-        
+
         yield self.response_generator.create_unrelated_message()
-        
-        # 转给回调处理
-        if unrelated_callback:
-            async for token in unrelated_callback(user_input):
-                yield token
     
     async def _record_consultation_behavior(self, user_input: str, knowledge_docs: list, session_id: str):
         """记录咨询行为"""

@@ -77,9 +77,9 @@ class ConsultantAgent:
         is_consultation = await self.consultation_classifier.is_consultation_related(user_input)
         
         if not is_consultation:
-            # 2. 处理与咨询无关的请求
+            # 2. 处理与咨询无关的请求（直接给出兜底回复，不转发回归类机器人，避免循环）
             async for token in self.consultation_processor.handle_unrelated_request(
-                user_input, self.unrelated_callback, self.shared_state
+                user_input, self.shared_state
             ):
                 yield token
             return

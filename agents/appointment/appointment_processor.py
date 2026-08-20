@@ -10,7 +10,8 @@ import asyncio
 import aiohttp
 from typing import Dict, Any, AsyncGenerator
 from .input_parser import InputParser
-from .technician_finder import TechnicianFinder
+from .tea_master_finder import TeaMasterFinder
+from .room_finder import TeaRoomFinder
 from .message_builder import MessageBuilder
 from .appointment_database import AppointmentDatabase
 from langchain.agents import AgentExecutor, create_openai_tools_agent
@@ -72,10 +73,11 @@ class WeatherMCPTool(BaseTool):
 class AppointmentProcessor:
     """预约处理器"""
     
-    def __init__(self, input_parser: InputParser, technician_finder: TechnicianFinder,
+    def __init__(self, input_parser: InputParser, tea_master_finder: TeaMasterFinder,
                  message_builder: MessageBuilder, appointment_database: AppointmentDatabase, llm=None):
         self.input_parser = input_parser
-        self.technician_finder = technician_finder
+        self.tea_master_finder = tea_master_finder
+        self.room_finder = TeaRoomFinder()
         self.message_builder = message_builder
         self.appointment_database = appointment_database
         self.llm = llm
@@ -98,58 +100,68 @@ class AppointmentProcessor:
     
     def update_history_from_data(self, appointment_history: Dict[str, Any], data: Dict[str, Any]) -> bool:
         """从解析数据更新预约历史"""
-        # 检查是否在等待用户确认推荐技师
+        # 检查是否在等待用户确认推荐茶艺师
         if appointment_history.get('awaiting_confirmation'):
             return self._handle_recommendation_response(appointment_history, data)
-        
+
         # 只更新有值的字段，避免覆盖之前的信息
-        for key in ["duration", "gender", "start_time", "project", "technician_name"]:
+        for key in ["duration", "gender", "start_time", "project", "tea_master_name", "wants_tea_master"]:
             if data.get(key) and data[key] != "未知":
                 appointment_history[key] = data[key]
-        
+
         # preference特殊处理
         if data.get("preference") and data["preference"] != "未知":
             appointment_history["preference"] = data["preference"]
-        
+
+        # 如果用户明确指定了茶艺师姓名，视为需要茶艺师
+        tea_master_name = appointment_history.get("tea_master_name")
+        if tea_master_name and tea_master_name != "未知":
+            appointment_history["wants_tea_master"] = "需要"
+
         # 检查是否收集齐所有必需信息
         # 必需信息：时间、项目、时长
-        # 如果指定了技师名，则不需要性别；否则性别也是必需的
+        # 茶艺师是可选项：
+        #   - 指定了茶艺师名：不需要额外询问，视为需要
+        #   - 未指定茶艺师名：先询问是否需要专属茶艺师；需要的话再问性别用于筛选；不需要则跳过
         required_fields = ["start_time", "project", "duration"]
-        technician_name = appointment_history.get("technician_name")
-        
-        if not technician_name or technician_name == "未知":
-            # 没有指定技师，需要性别来筛选
-            required_fields.append("gender")
-        
+        wants_tea_master = appointment_history.get("wants_tea_master")
+
+        if not tea_master_name or tea_master_name == "未知":
+            if not wants_tea_master or wants_tea_master == "未知":
+                required_fields.append("wants_tea_master")
+            elif wants_tea_master == "需要":
+                required_fields.append("gender")
+            # wants_tea_master == "不需要" 时无需额外字段
+
         has_all_required = all(
-            appointment_history.get(field) and appointment_history[field] != "未知" 
+            appointment_history.get(field) and appointment_history[field] != "未知"
             for field in required_fields
         )
-        
-        # 如果信息完整，但是指定的技师不可用且需要推荐，则不认为预约"完成"
-        if has_all_required and technician_name and technician_name != "未知":
-            # 检查指定技师是否可用，如果不可用则进入推荐流程
+
+        # 如果信息完整，但是指定的茶艺师不可用且需要推荐，则不认为预约"完成"
+        if has_all_required and tea_master_name and tea_master_name != "未知":
+            # 检查指定茶艺师是否可用，如果不可用则进入推荐流程
             # 这个检查留到 handle_complete_appointment 中进行
             pass
-        
+
         return has_all_required
 
     def _handle_recommendation_response(self, appointment_history: Dict[str, Any], data: Dict[str, Any]) -> bool:
-        """处理用户对推荐技师的回应"""
+        """处理用户对推荐茶艺师的回应"""
         user_response = data.get('confirmation', '').lower()
-        
+
         # 判断用户是否同意推荐
         positive_responses = ['是', '好', '可以', '同意', '确定', 'yes', 'ok', '行']
         negative_responses = ['不', '不要', '不行', '不同意', '换', 'no']
-        
+
         is_positive = any(pos in user_response for pos in positive_responses)
         is_negative = any(neg in user_response for neg in negative_responses)
-        
+
         if is_positive and not is_negative:
-            # 用户同意推荐，更新技师信息
-            recommended_tech = appointment_history.get('recommended_technician')
-            if recommended_tech:
-                appointment_history['confirmed_technician'] = recommended_tech
+            # 用户同意推荐，更新茶艺师信息
+            recommended_tm = appointment_history.get('recommended_tea_master')
+            if recommended_tm:
+                appointment_history['confirmed_tea_master'] = recommended_tm
                 appointment_history['awaiting_confirmation'] = False
                 return True  # 表示可以进行预约
         elif is_negative:
@@ -157,7 +169,7 @@ class AppointmentProcessor:
             appointment_history['recommendation_declined'] = True
             appointment_history['awaiting_confirmation'] = False
             return True  # 表示需要处理拒绝情况
-        
+
         # 用户回应不明确，继续等待
         # 这里返回 False，表示信息还不完整，需要继续等待用户输入
         return False
@@ -191,106 +203,146 @@ class AppointmentProcessor:
             yield f"[REPLY][预约机器人]{reply}"
             # 清理状态
             appointment_history.pop('recommendation_declined', None)
-            appointment_history.pop('recommended_technician', None)
-            appointment_history.pop('original_technician', None)
+            appointment_history.pop('recommended_tea_master', None)
+            appointment_history.pop('original_tea_master', None)
             return
-        
-        # 检查是否用户确认了推荐技师
-        if appointment_history.get('confirmed_technician'):
-            tech = appointment_history['confirmed_technician']
-            # 标记为推荐技师用于成功消息显示
-            tech['is_recommendation'] = True
-            tech['original_technician'] = appointment_history.get('original_technician')
-            reply = await self._process_successful_appointment(tech, appointment_history, session_id)
+
+        # 检查是否用户确认了推荐茶艺师
+        if appointment_history.get('confirmed_tea_master'):
+            tm = appointment_history['confirmed_tea_master']
+            # 标记为推荐茶艺师用于成功消息显示
+            tm['is_recommendation'] = True
+            tm['original_tea_master'] = appointment_history.get('original_tea_master')
+            reply = await self._process_successful_appointment(tm, appointment_history, session_id)
             yield f"[REPLY][预约机器人]{reply}"
             # 清理状态
-            appointment_history.pop('confirmed_technician', None)
-            appointment_history.pop('recommended_technician', None)
-            appointment_history.pop('original_technician', None)
+            appointment_history.pop('confirmed_tea_master', None)
+            appointment_history.pop('recommended_tea_master', None)
+            appointment_history.pop('original_tea_master', None)
             return
-        
-        # 检查是否在等待用户确认推荐技师
+
+        # 检查是否在等待用户确认推荐茶艺师
         if appointment_history.get('awaiting_confirmation'):
             # 用户回应不明确，重新询问
             yield f"[REPLY][预约机器人]\n机器人：请您明确回复\"是\"或\"不\"，我好为您安排预约。\n"
             return
-        
+
+        # 如果用户明确表示不需要专属茶艺师，且未指定茶艺师姓名，跳过茶艺师匹配，直接完成预约
+        tea_master_name_check = appointment_history.get("tea_master_name")
+        if appointment_history.get('wants_tea_master') == '不需要' and (
+            not tea_master_name_check or tea_master_name_check == "未知"
+        ):
+            reply = await self._process_successful_appointment(None, appointment_history, session_id)
+            yield f"[REPLY][预约机器人]{reply}"
+            return
+
         # 收集思考过程
         thought_msgs = []
         def collect_thoughts(msg):
             thought_msgs.append(msg)
-        
-        tech = self.technician_finder.find_technician_with_thought(appointment_history, collect_thoughts)
-        
+
+        tm = self.tea_master_finder.find_tea_master_with_thought(appointment_history, collect_thoughts)
+
         # 输出所有思考过程
         for msg in thought_msgs:
             yield msg
-        
-        technician_name = appointment_history.get("technician_name")
-        
-        if tech:
+
+        tea_master_name = appointment_history.get("tea_master_name")
+
+        if tm:
             # 检查是否是需要确认的推荐
-            if tech.get('requires_confirmation'):
-                original_tech = tech.get('original_technician')
-                recommended_tech = tech.get('recommended_technician')
-                
+            if tm.get('requires_confirmation'):
+                original_tm = tm.get('original_tea_master')
+                recommended_tm = tm.get('recommended_tea_master')
+
                 # 生成推荐消息
-                recommendation_msg = self.message_builder.create_technician_recommendation_message(
-                    original_tech, recommended_tech, appointment_history, self.llm
+                recommendation_msg = self.message_builder.create_tea_master_recommendation_message(
+                    original_tm, recommended_tm, appointment_history, self.llm
                 )
                 yield f"[REPLY][预约机器人]{recommendation_msg}"
-                
+
                 # 将推荐信息存储在预约历史中，等待用户确认
-                appointment_history['recommended_technician'] = recommended_tech
-                appointment_history['original_technician'] = original_tech
+                appointment_history['recommended_tea_master'] = recommended_tm
+                appointment_history['original_tea_master'] = original_tm
                 appointment_history['awaiting_confirmation'] = True
-                
+
                 # 重要：告诉调用方这个预约还没有真正完成，需要继续等待用户输入
                 yield "[SIGNAL]recommendation_pending"
                 return
             else:
                 # 正常预约流程
-                reply = await self._process_successful_appointment(tech, appointment_history, session_id)
+                reply = await self._process_successful_appointment(tm, appointment_history, session_id)
                 yield f"[REPLY][预约机器人]{reply}"
         else:
-            reply = self.message_builder.create_appointment_failure_message(technician_name)
+            reply = self.message_builder.create_appointment_failure_message(tea_master_name)
             yield f"[REPLY][预约机器人]{reply}"
-    
-    async def _process_successful_appointment(self, tech: Dict[str, Any], 
+
+    async def _process_successful_appointment(self, tm: Dict[str, Any],
                                            appointment_history: Dict[str, Any], session_id: str) -> str:
-        """处理预约成功的情况，并结合北京天气生成温馨提示"""
-        start_time, end_time, duration_min = self.technician_finder.parse_time_and_duration(
-            appointment_history["start_time"], 
+        """处理预约成功的情况，匹配茶室并结合北京天气生成温馨提示
+
+        tm 为 None 表示本次预约不需要专属茶艺师。
+        """
+        start_time, end_time, duration_min = self.tea_master_finder.parse_time_and_duration(
+            appointment_history["start_time"],
             appointment_history["duration"]
         )
+        tea_master_id = tm["id"] if tm else None
         # 保存预约到数据库
         success = self.appointment_database.save_appointment(
-            tech["id"], start_time, end_time, appointment_history, session_id
+            tea_master_id, start_time, end_time, appointment_history, session_id
         )
-        if success:
-            # 更新内存中的忙碌时段
-            self.appointment_database.update_memory_schedule(tech["id"], start_time, end_time)
-            # 使用 LLM agent 生成结合北京天气的温馨提示
-            if self.llm and hasattr(self, 'agent_executor'):
-                prompt = f"请获取北京今天的天气信息，然后结合天气情况为用户生成一段温馨的预约成功提示。技师姓名：{tech['name']}，性别：{tech['gender']}。请根据天气给出合适的建议和关怀。"
-                try:
-                    result = await self.agent_executor.ainvoke({"input": prompt})
-                    agent_output = result.get("output", "")
-                    return f"\n机器人：已为您预约技师：{tech['name']}，性别：{tech['gender']}。预约成功！\n{agent_output}\n"
-                except Exception as e:
-                    print(f"Agent调用失败: {e}")
-                    return self.message_builder.create_appointment_success_message(tech)
-            else:
-                return self.message_builder.create_appointment_success_message(tech)
-        else:
+        if not success:
             return self.message_builder.create_save_failure_message()
-    
+
+        # 更新内存中的忙碌时段（仅在指定了茶艺师时才需要占用其档期）
+        if tea_master_id is not None:
+            self.appointment_database.update_memory_schedule(tea_master_id, start_time, end_time)
+
+        # 尝试为本次预约匹配一个可用茶室（茶室是独立于茶艺师的资源，不管是否需要茶艺师都会安排）
+        room = self.room_finder.find_available_room(start_time, end_time, appointment_history.get("project"))
+        if room:
+            self.appointment_database.save_room_reservation(room["id"], start_time, end_time)
+
+        # 使用 LLM agent 生成结合北京天气与茶室安排的温馨提示
+        if self.llm and hasattr(self, 'agent_executor'):
+            if room:
+                room_info = f"已为您安排茶室：{room['name']}（{room.get('room_type', '')}，可容纳{room.get('capacity', '若干')}人）。"
+            else:
+                room_info = "当前时段茶室较为紧张，我们会尽快为您协调合适的座位。"
+
+            if tm:
+                prompt = (
+                    f"请获取北京今天的天气信息，然后结合天气情况为用户生成一段温馨的预约成功提示。"
+                    f"茶艺师姓名：{tm['name']}，性别：{tm['gender']}。{room_info}"
+                    f"请根据天气给出合适的建议和关怀，并自然地提一下为其安排的茶室。"
+                )
+            else:
+                prompt = (
+                    f"请获取北京今天的天气信息，然后结合天气情况为用户生成一段温馨的预约成功提示。"
+                    f"本次预约不指定专属茶艺师，用户将自行前来品茶。{room_info}"
+                    f"请根据天气给出合适的建议和关怀，并自然地提一下为其安排的茶室。"
+                )
+            try:
+                result = await self.agent_executor.ainvoke({"input": prompt})
+                agent_output = result.get("output", "")
+                if tm:
+                    return f"\n机器人：已为您预约茶艺师：{tm['name']}，性别：{tm['gender']}。预约成功！\n{agent_output}\n"
+                else:
+                    return f"\n机器人：已为您安排好品茶时间，预约成功！\n{agent_output}\n"
+            except Exception as e:
+                print(f"Agent调用失败: {e}")
+                return self.message_builder.create_appointment_success_message(tm, room)
+        else:
+            return self.message_builder.create_appointment_success_message(tm, room)
+
     async def handle_incomplete_info(self, data: Dict[str, Any], appointment_history: Dict[str, Any]) -> AsyncGenerator[str, None]:
         """处理信息不完整的情况"""
         # 确定缺失的信息
         missing = []
-        technician_name = appointment_history.get("technician_name")
-        
+        tea_master_name = appointment_history.get("tea_master_name")
+        wants_tea_master = appointment_history.get("wants_tea_master")
+
         # 基本必需信息
         if not appointment_history.get("start_time") or appointment_history.get("start_time") == "未知":
             missing.append("start_time")
@@ -298,11 +350,14 @@ class AppointmentProcessor:
             missing.append("project")
         if not appointment_history.get("duration") or appointment_history.get("duration") == "未知":
             missing.append("duration")
-        
-        # 如果没有指定技师名，则需要性别
-        if not technician_name or technician_name == "未知":
-            if not appointment_history.get("gender") or appointment_history.get("gender") == "未知":
-                missing.append("gender")
+
+        # 如果没有指定茶艺师名：先确认是否需要专属茶艺师，需要的话再问性别
+        if not tea_master_name or tea_master_name == "未知":
+            if not wants_tea_master or wants_tea_master == "未知":
+                missing.append("wants_tea_master")
+            elif wants_tea_master == "需要":
+                if not appointment_history.get("gender") or appointment_history.get("gender") == "未知":
+                    missing.append("gender")
         
         reply = self.message_builder.create_missing_info_questions(missing)
         yield f"[THOUGHT][预约机器人]用户的预约信息不完整，缺少：{', '.join(missing)}，我需要询问用户补充这些信息"

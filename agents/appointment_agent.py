@@ -3,10 +3,10 @@ import uuid
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from config.model_provider import create_chat_model
 from .appointment import (
-    InputParser, 
-    TechnicianFinder, 
-    AppointmentProcessor, 
-    MessageBuilder, 
+    InputParser,
+    TeaMasterFinder,
+    AppointmentProcessor,
+    MessageBuilder,
     AppointmentDatabase
 )
 
@@ -34,13 +34,13 @@ class AppointmentAgent:
         
         # 初始化组件
         self.input_parser = InputParser(self.llm)
-        self.technician_finder = TechnicianFinder()
+        self.tea_master_finder = TeaMasterFinder()
         self.message_builder = MessageBuilder()
         self.appointment_database = AppointmentDatabase()
         self.appointment_processor = AppointmentProcessor(
-            self.input_parser, 
-            self.technician_finder,
-            self.message_builder, 
+            self.input_parser,
+            self.tea_master_finder,
+            self.message_builder,
             self.appointment_database,
             self.llm
         )
@@ -72,8 +72,9 @@ class AppointmentAgent:
             "duration": None,
             "project": None,
             "preference": None,
-            "technician": None,
-            "technician_name": None
+            "tea_master": None,
+            "tea_master_name": None,
+            "wants_tea_master": None
         }
         self.finished = False
         self.chat_history.clear()
@@ -102,7 +103,7 @@ class AppointmentAgent:
             self.finished = self.appointment_processor.update_history_from_data(self.appointment_history, data)
             
             # 3. 处理与预约无关的请求
-            # 如果正在等待用户确认推荐技师，不要转交给归类机器人
+            # 如果正在等待用户确认推荐茶艺师，不要转交给归类机器人
             if data.get("unrelated", False) and not self.appointment_history.get('awaiting_confirmation'):
                 # 注意：这里不清空预约历史，保留用户已输入的信息
                 # 只设置状态为CLASSIFY，让系统转交给其他机器人处理

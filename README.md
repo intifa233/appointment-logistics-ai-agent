@@ -1,25 +1,27 @@
-# Smart Appointment AI Agent
+# Smart Tea House Appointment & Logistics AI Agent
 
-Smart Appointment AI Agent 是一个面向按摩门店场景的智能预约与咨询系统。项目基于 FastAPI、LangChain、FAISS、SQLite 和多 Agent 协作架构，实现了意图识别、RAG 知识问答、技师智能匹配、预约管理、用户行为分析和个性化提醒等能力。
+Smart Tea House Appointment & Logistics AI Agent 是一个面向茶馆场景的智能预约与物流管理系统。项目基于 FastAPI、LangChain、FAISS、SQLite 和多 Agent 协作架构，实现了意图识别、RAG 知识问答、茶艺师智能匹配、茶室与包间预约、茶叶库存管理、用户行为分析和个性化提醒等能力。
 
-这个项目的核心目标不是只做一个普通的预约表单，而是尝试把门店前台日常需要处理的高频工作自动化：理解用户想咨询还是预约，判断服务偏好，匹配合适技师，检查可用时间，生成预约结果，并在必要时结合天气、历史行为和偏好数据给出更贴近用户的提醒与推荐。
+这个项目的核心目标不是只做一个普通的预约表单，而是尝试把茶馆前台日常需要处理的高频工作自动化：理解用户想咨询还是预约，判断茶艺服务偏好，匹配合适的茶艺师，检查茶室可用时间，生成预约结果，并在必要时结合天气、历史行为和偏好数据给出更贴近用户的提醒与推荐，同时管理好茶室、包间、设备和茶叶库存等物流事务。
 
 ## 项目背景
 
-在一次按摩门店体验中，我注意到前台人员需要同时处理大量复杂事务：技师排班、顾客预约、服务项目咨询、价格计算、临时改约、技师偏好记录和收款确认等。随着技师数量和顾客量增加，传统人工前台模式很容易出现沟通成本高、信息遗漏、排班冲突和服务体验不稳定的问题。
+在一次茶馆体验中，我注意到前台人员需要同时处理大量复杂事务：茶艺师排班、顾客预约、茶室/包间调度、茶叶库存补货、价格计算、临时改约、茶艺师偏好记录和收款确认等。随着茶艺师数量、茶室数量和顾客量增加，传统人工前台模式很容易出现沟通成本高、信息遗漏、排班冲突和服务体验不稳定的问题。
 
-因此，本项目尝试用 AI Agent 的方式重构这一流程：让系统能够像一个智能前台一样主动理解用户需求，并把不同任务分发给对应的专业 Agent 处理。它既适用于按摩门店，也可以扩展到其他需要人员排班、预约调度和智能客服的服务行业。
+因此，本项目尝试用 AI Agent 的方式重构这一流程：让系统能够像一个智能前台一样主动理解用户需求，并把不同任务分发给对应的专业 Agent 处理。它既适用于茶馆，也可以扩展到其他需要人员排班、场地预约调度和智能客服的服务行业。
 
 ## 核心能力
 
-- **智能任务分类**：自动识别用户是在咨询服务、预约技师、查询无关问题，还是触发用户行为分析，并将请求路由到对应 Agent。
+- **智能任务分类**：自动识别用户是在咨询茶艺服务、预约茶艺师、查询无关问题，还是触发用户行为分析，并将请求路由到对应 Agent。
 - **多 Agent 协作**：通过任务分类 Agent、咨询 Agent、预约 Agent 和用户行为 Agent 分工处理复杂流程，减少单个模块的职责膨胀。
 - **RAG 知识咨询**：使用 FAISS 向量索引检索知识库内容，结合大模型生成自然语言回答，支持流式输出。
-- **智能预约管理**：根据用户需求、技师专长、历史偏好和可用时间进行匹配，辅助完成预约确认。
+- **智能预约管理**：根据用户需求、茶艺师专长、历史偏好和可用时间进行匹配，辅助完成预约确认。
+- **茶室与设备物流管理**：管理雅座、包间、茶道体验室等茶室资源的类型、容量、设备配置和排班占用情况。
+- **茶叶库存管理**：跟踪各类茶叶的库存数量、补货阈值和单价，支持低库存预警。
 - **用户行为分析**：记录用户交互与预约行为，分析偏好模式，并用于后续推荐和个性化反馈。
 - **个性化提醒**：在预约完成后，可结合实时天气等外部信息生成更贴近实际场景的提醒。
 - **Embedding 缓存优化**：通过数据库缓存和文件缓存减少重复向量计算，提高知识检索性能。
-- **数据管理能力**：支持知识库、技师信息和用户行为数据的增删改查，并在数据变化后自动维护索引。
+- **数据管理能力**：支持知识库、茶艺师、茶室和库存数据的增删改查，并在数据变化后自动维护索引。
 - **日志与兜底机制**：保留关键处理过程日志，在信息不足或异常情况下提供更稳定的降级处理。
 
 ## 系统架构
@@ -87,16 +89,16 @@ DB Layer
 
 ### Appointment Agent
 
-预约 Agent 负责预约相关流程，包括解析用户输入、匹配技师、检查预约信息、生成确认消息等。
+预约 Agent 负责预约相关流程，包括解析用户输入、匹配茶艺师、检查预约信息、生成确认消息等。
 
 ```text
-任务分类 → 解析预约需求 → 技师匹配 → 预约确认
+任务分类 → 解析预约需求 → 茶艺师匹配 → 预约确认
 ```
 
 主要职责：
 
-- 提取预约时间、服务项目、技师偏好等信息
-- 匹配合适技师
+- 提取预约时间、服务项目、茶艺师偏好等信息
+- 匹配合适茶艺师
 - 处理信息缺失时的追问
 - 生成预约结果和提醒
 
@@ -123,11 +125,11 @@ DB Layer
 
 ### 2. 用 RAG 解决专业知识回答
 
-按摩服务相关的项目介绍、注意事项、适用人群等内容更适合通过知识库维护。RAG 能让回答基于可控知识来源，而不是完全依赖大模型自由生成。
+茶艺相关的茶叶介绍、冲泡注意事项、适饮人群等内容更适合通过知识库维护。RAG 能让回答基于可控知识来源，而不是完全依赖大模型自由生成。
 
 ### 3. 用用户行为让推荐更个性化
 
-系统会记录用户的咨询、预约和偏好信息。后续在推荐技师或服务项目时，可以结合历史行为，而不是每次都从零开始询问。
+系统会记录用户的咨询、预约和偏好信息。后续在推荐茶艺师或茶艺服务时，可以结合历史行为，而不是每次都从零开始询问。
 
 ### 4. 用分层架构保证可维护性
 
@@ -135,7 +137,7 @@ Agent 负责智能流程，Service 负责业务逻辑，Repository 负责数据�
 
 ### 5. 为真实业务场景预留扩展空间
 
-项目目前以本地 SQLite 和单体服务为主，但架构上预留了模型提供商切换、MCP 外部服务接入、后台任务、缓存优化和云端部署的扩展方向。
+项目目前以本地 SQLite 和单体服务为主，但架构上预留了模型提供商切换、MCP 外部服务接入、后台任务、缓存优化和云端部署的扩展方向。茶室与库存模块也按照与茶艺师模块相同的分层模式实现，方便后续接入更完整的物流调度能力（如自动分配茶室、库存自动扣减等）。
 
 ## 架构图
 
@@ -158,7 +160,7 @@ Agent 负责智能流程，Service 负责业务逻辑，Repository 负责数据�
 ## 项目结构
 
 ```text
-Smart appointment AI agent/
+Smart Tea House Appointment & Logistics AI Agent/
 ├── agents/                         # 多 Agent 智能层
 │   ├── task_classification_agent.py # 任务分类与主路由
 │   ├── consultant_agent.py          # RAG 咨询 Agent
@@ -166,21 +168,25 @@ Smart appointment AI agent/
 │   ├── user_behavior_agent.py       # 用户行为分析 Agent
 │   ├── task_classification/         # 意图识别、状态管理、路由逻辑
 │   ├── consultant/                  # 知识检索、提示词、回答生成
-│   ├── appointment/                 # 预约解析、技师匹配、消息构建
+│   ├── appointment/                 # 预约解析、茶艺师匹配、消息构建
 │   └── user_behavior/               # 行为记录、偏好管理、模式分析
 ├── api/                             # API 编排层
 │   ├── appointment.py               # 预约接口
 │   ├── consultation.py              # 咨询接口
 │   ├── task.py                      # 任务分类接口
 │   ├── chat_handler.py              # 流式聊天处理
-│   ├── technician.py                # 技师管理接口
+│   ├── tea_master.py                # 茶艺师管理接口
+│   ├── tea_room.py                  # 茶室管理接口
+│   ├── inventory.py                 # 茶叶库存管理接口
 │   ├── knowledge.py                 # 知识库管理接口
 │   └── user_behavior_analysis.py    # 用户行为分析接口
 ├── services/                        # 业务逻辑层
 │   ├── appointment_service.py       # 预约业务逻辑
 │   ├── knowledge_service.py         # 知识库管理
 │   ├── recommendation_service.py    # 推荐逻辑
-│   ├── technician_service.py        # 技师信息管理
+│   ├── tea_master_service.py        # 茶艺师信息管理
+│   ├── tea_room_service.py          # 茶室信息管理
+│   ├── inventory_service.py         # 茶叶库存管理
 │   ├── text_embedding.py            # Embedding 与向量处理
 │   └── user_behavior_service.py     # 用户行为服务
 ├── db/                              # 数据持久化层
@@ -267,7 +273,7 @@ EMBEDDING_API_KEY=your_embedding_api_key_here
 EMBEDDING_BASE_URL=your_openai_compatible_embedding_base_url_here
 EMBEDDING_MODEL=your_embedding_model_name_here
 
-DATABASE_URL=sqlite:///./data/smart_appointment.db
+DATABASE_URL=sqlite:///./data/tea_house.db
 
 DEBUG=True
 LOG_LEVEL=INFO
@@ -298,6 +304,35 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 - API 文档：http://127.0.0.1:8000/docs
 - ReDoc 文档：http://127.0.0.1:8000/redoc
 
+## 部署到 Railway
+
+项目是一个带持久化 SQLite、后台调度线程和流式响应的长驻进程服务，天然适合部署在
+Railway 这类支持长驻容器 + 持久化磁盘的平台上（**不适合 Vercel 等无服务器/Serverless
+平台**——那类平台的文件系统不持久、不支持后台常驻线程，也不方便长时间流式响应）。
+
+仓库已经包含部署所需的配置：
+
+- `Procfile` / `railway.toml`：启动命令为 `uvicorn app:app --host 0.0.0.0 --port $PORT`，并配置了 `/health` 健康检查。
+- `.python-version`：固定 Python 版本，保证构建环境一致。
+- `db/base/session_manager.py`：启动时会自动创建 SQLite 文件所在目录（如 `data/`），避免因目录不存在导致启动失败。
+
+### 部署步骤
+
+1. 在 [Railway](https://railway.app) 新建项目，选择 "Deploy from GitHub repo"，关联本仓库。
+2. Railway 会通过 Nixpacks 自动识别 `requirements.txt` 并安装依赖，无需额外配置构建命令。
+3. 在项目的 **Variables** 中添加环境变量（与本地 `.env` 内容一致，参考上面"配置环境变量"一节）：
+   - `MODEL_PROVIDER`、`LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL`
+   - `EMBEDDING_PROVIDER`、`EMBEDDING_API_KEY`、`EMBEDDING_BASE_URL`、`EMBEDDING_MODEL`
+   - `OPENWEATHER_API_KEY`（可选）
+   - `DATABASE_URL`（建议保持 `sqlite:///data/tea_house.db`，配合下面的持久化卷使用）
+4. **务必挂载一个持久化 Volume**：在服务的 Settings → Volumes 中新建一个卷，挂载路径设为 `/app/data`（对应仓库中的 `data/` 目录）。否则每次重新部署或容器重启，SQLite 数据库、知识库向量索引缓存都会丢失，相当于每次都是"全新开店"。
+5. 部署完成后，Railway 会分配一个 `*.up.railway.app` 域名，可在 Settings → Networking 中生成公网访问地址；`/health` 用于平台健康检查，`/docs` 可查看在线 API 文档。
+
+### 已知限制
+
+- `services/recommendation_service.py` 中的定时推荐调度基于进程内的 `threading.Thread`，仅在单实例、且该实例不休眠的情况下才会按预期触发；如果启用了 Railway 的自动休眠（Sleep）或水平扩容到多个实例，定时任务的触发时机会不可靠。
+- `api/chat_handler.py` 目前使用进程内的全局单例会话，尚未做多用户会话隔离，生产环境多用户同时使用时会共享同一个对话上下文，建议在正式对外服务前补充按用户/按 session 的会话隔离。
+
 ## 测试
 
 运行全部测试：
@@ -316,8 +351,10 @@ pytest tests/test_task_classification_agent.py
 
 - 首页聊天与预约入口：`web/templates/index.html`
 - 知识库管理：`web/templates/knowledge_management.html`
-- 技师管理：`web/templates/technician.html`
-- 技师排班：`web/templates/technician_schedule.html`
+- 茶艺师管理：`web/templates/tea_master.html`
+- 茶艺师排班：`web/templates/tea_master_schedule.html`
+- 茶室管理：`web/templates/tea_room.html`
+- 茶叶库存管理：`web/templates/inventory.html`
 - 用户行为分析：`web/templates/user_behavior_analysis.html`
 
 ## 后续规划
@@ -334,6 +371,12 @@ pytest tests/test_task_classification_agent.py
 - 将用户行为 Agent 的后台分析能力做得更稳定，支持定时任务和主动触达。
 - 把预约、推荐、咨询之间的上下文记忆打通得更自然。
 
+### 更完整的物流能力
+
+- 把茶室预约纳入 AI 对话流程，让系统能像匹配茶艺师一样自动匹配可用茶室。
+- 将茶叶库存与预约流程打通，按服务项目自动扣减库存并触发补货提醒。
+- 支持设备（茶具、投影等）的独立调度和冲突检测。
+
 ### 生产化能力
 
 - 增加用户登录、权限控制和数据隔离。
@@ -343,14 +386,14 @@ pytest tests/test_task_classification_agent.py
 
 ## 项目价值
 
-这个项目把多 Agent、RAG、用户行为分析、预约调度和外部工具接入放在同一个真实业务场景中验证。它既是一个按摩门店智能前台原型，也可以作为学习 AI Agent 工程化、分层架构、RAG 系统和业务自动化的综合实践项目。
+这个项目把多 Agent、RAG、用户行为分析、预约调度、物流管理和外部工具接入放在同一个真实业务场景中验证。它既是一个茶馆智能前台原型，也可以作为学习 AI Agent 工程化、分层架构、RAG 系统和业务自动化的综合实践项目。
 
 
 
 ------------------------------------------------------------
-这个项目是我最早开始自学大模型做的项目。上面的内容是当时（2025年7月左右完成的）。
+这个项目最早是我自学大模型时做的一个按摩门店预约系统原型，后来改造为现在的茶馆预约与物流系统版本，用来验证同一套多 Agent 架构在不同业务场景下的可迁移性。
 其实我在计划做更加复杂，符合时代趋势的Agent，预计在9月份完成，会分享在笔记中。
-但是很多朋友问我这个项目能不能参考，所以我索性总结开源了除了。值得一提的是，上面的内容是25年写的，当时如何配置环境，都是传统方法，写在README中，自己配置。 但是在2026年，不管是vibe coding的方法，还是环境配置的方法，都有了极大改进。
+但是很多朋友问我这个项目能不能参考，所以我索性总结开源了除了。值得一提的是，最初的版本是25年写的，当时如何配置环境，都是传统方法，写在README中，自己配置。 但是在2026年，不管是vibe coding的方法，还是环境配置的方法，都有了极大改进。
 
 我的项目配置的方法，现在都推荐使用SKILL，所以这里有setup-envrionment skill，一键配置。
 我也总结了更多的这个项目，放在2026年，如何包装，如何使用配套资源，面试真题，视频讲解，使用建议在我的大模型笔记中。

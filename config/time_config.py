@@ -64,7 +64,7 @@ class TimeConfig:
     @classmethod
     def get_business_hours(cls) -> tuple:
         """获取营业时间范围"""
-        return (12, 22)  # 12:00 - 22:00
+        return (10, 23)  # 10:00 - 23:00
     
     @classmethod
     def is_business_time(cls, dt: Optional[datetime] = None) -> bool:
