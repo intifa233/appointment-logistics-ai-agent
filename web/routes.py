@@ -54,12 +54,12 @@ async def knowledge_page(request: Request):
     # 通过API层获取知识库数据
     try:
         from api.knowledge import get_all_knowledge
-        
+
         # 调用API层函数获取数据
         knowledge_data = await get_all_knowledge()
         documents = knowledge_data.get("documents", [])
         categories = knowledge_data.get("categories", [])
-        
+
         return templates.TemplateResponse("knowledge_management.html", {
             "request": request,
             "documents": documents,
@@ -73,59 +73,137 @@ async def knowledge_page(request: Request):
             "error": str(e)
         })
 
-@router.get("/technician", response_class=HTMLResponse, summary="技师状态页面")
-async def technician_page(request: Request):
-    """技师状态页面"""
-    # 通过API层获取技师数据
+@router.get("/tea-master", response_class=HTMLResponse, summary="茶艺师状态页面")
+async def tea_master_page(request: Request):
+    """茶艺师状态页面"""
+    # 通过API层获取茶艺师数据
     try:
-        from api.technician import get_all_technicians
-        
+        from api.tea_master import get_all_tea_masters
+
         # 调用API层函数获取数据
-        technicians = await get_all_technicians()
-        
-        return templates.TemplateResponse("technician.html", {
+        tea_masters = await get_all_tea_masters()
+
+        return templates.TemplateResponse("tea_master.html", {
             "request": request,
-            "technicians": technicians
+            "tea_masters": tea_masters
         })
     except Exception as e:
-        return templates.TemplateResponse("technician.html", {
+        return templates.TemplateResponse("tea_master.html", {
             "request": request,
-            "technicians": [],
+            "tea_masters": [],
             "error": str(e)
         })
 
-@router.get("/technician_schedule", response_class=HTMLResponse, summary="技师排班页面")
-async def technician_schedule_page(request: Request):
-    """技师排班页面"""
+@router.get("/tea-master-schedule", response_class=HTMLResponse, summary="茶艺师排班页面")
+async def tea_master_schedule_page(request: Request):
+    """茶艺师排班页面"""
     try:
-        from api.technician import get_all_technicians_schedule_today
+        from api.tea_master import get_all_tea_masters_schedule_today
         from config.time_config import time_config
-        
+
         # 获取当前日期
         current_date = time_config.current_date_str()
-        
-        # 通过API层获取所有技师的排班数据
-        schedules_data = await get_all_technicians_schedule_today()
-        
+
+        # 通过API层获取所有茶艺师的排班数据
+        schedules_data = await get_all_tea_masters_schedule_today()
+
         # 构建排班数据格式 - 直接使用API返回的数据
         schedule = []
         for schedule_item in schedules_data:
             schedule.append({
-                "id": schedule_item["technician_id"],
-                "name": schedule_item["technician_name"],
+                "id": schedule_item["tea_master_id"],
+                "name": schedule_item["tea_master_name"],
                 "busy_periods": schedule_item["busy_periods"]
             })
-        
-        return templates.TemplateResponse("technician_schedule.html", {
+
+        return templates.TemplateResponse("tea_master_schedule.html", {
             "request": request,
             "schedule": schedule,
             "current_date": current_date
         })
     except Exception as e:
-        logger.error(f"加载技师排班数据失败: {str(e)}")
-        return templates.TemplateResponse("technician_schedule.html", {
+        logger.error(f"加载茶艺师排班数据失败: {str(e)}")
+        return templates.TemplateResponse("tea_master_schedule.html", {
             "request": request,
             "schedule": [],
+            "error": str(e)
+        })
+
+@router.get("/tea-room", response_class=HTMLResponse, summary="茶室管理页面")
+async def tea_room_page(request: Request):
+    """茶室/包间管理页面"""
+    try:
+        from api.tea_room import get_all_rooms
+
+        rooms = await get_all_rooms()
+
+        return templates.TemplateResponse("tea_room.html", {
+            "request": request,
+            "rooms": rooms
+        })
+    except Exception as e:
+        return templates.TemplateResponse("tea_room.html", {
+            "request": request,
+            "rooms": [],
+            "error": str(e)
+        })
+
+@router.get("/tea-room-schedule", response_class=HTMLResponse, summary="茶室占用状态页面")
+async def tea_room_schedule_page(request: Request):
+    """茶室占用状态页面"""
+    try:
+        from api.tea_room import get_all_rooms_schedule_today
+        from config.time_config import time_config
+
+        current_date = time_config.current_date_str()
+
+        schedules_data = await get_all_rooms_schedule_today()
+
+        schedule = []
+        for schedule_item in schedules_data:
+            schedule.append({
+                "id": schedule_item["room_id"],
+                "name": schedule_item["room_name"],
+                "busy_periods": schedule_item["busy_periods"]
+            })
+
+        return templates.TemplateResponse("tea_room_schedule.html", {
+            "request": request,
+            "schedule": schedule,
+            "current_date": current_date
+        })
+    except Exception as e:
+        logger.error(f"加载茶室占用数据失败: {str(e)}")
+        return templates.TemplateResponse("tea_room_schedule.html", {
+            "request": request,
+            "schedule": [],
+            "error": str(e)
+        })
+
+@router.get("/inventory", response_class=HTMLResponse, summary="茶叶库存管理页面")
+async def inventory_page(request: Request):
+    """茶叶库存管理页面"""
+    try:
+        from api.inventory import get_all_items
+
+        result = await get_all_items()
+        items = result.get("data", [])
+        low_stock_count = sum(
+            1 for item in items
+            if (item.get("stock_quantity") or 0) <= (item.get("reorder_threshold") or 0)
+        )
+
+        return templates.TemplateResponse("inventory.html", {
+            "request": request,
+            "items": items,
+            "low_stock_count": low_stock_count
+        })
+    except Exception as e:
+        logger.error(f"加载库存数据失败: {str(e)}")
+        return templates.TemplateResponse("inventory.html", {
+            "request": request,
+            "items": [],
+            "low_stock_count": 0,
             "error": str(e)
         })
 
@@ -140,34 +218,34 @@ async def admin_dashboard(request: Request):
     try:
         # 通过API层获取系统状态信息
         from api.knowledge import get_all_knowledge
-        from api.technician import get_all_technicians
-        
+        from api.tea_master import get_all_tea_masters
+
         # 获取知识库数据
         knowledge_data = await get_all_knowledge()
         knowledge_count = knowledge_data.get("total_count", 0)
         categories = knowledge_data.get("categories", [])
-        
-        # 获取技师数据
-        technicians = await get_all_technicians()
-        
+
+        # 获取茶艺师数据
+        tea_masters = await get_all_tea_masters()
+
         # 数据库信息
         db_info = {
             "knowledge_count": knowledge_count,
             "categories_count": len(categories),
-            "technicians_count": len(technicians),
+            "tea_masters_count": len(tea_masters),
             "categories": categories
         }
-        
+
         return templates.TemplateResponse("admin_dashboard.html", {
             "request": request,
             "db_info": db_info,
-            "technicians": technicians[:5]  # 只显示前5个技师
+            "tea_masters": tea_masters[:5]  # 只显示前5位茶艺师
         })
     except Exception as e:
         return templates.TemplateResponse("admin_dashboard.html", {
             "request": request,
             "db_info": {},
-            "technicians": [],
+            "tea_masters": [],
             "error": str(e)
         })
 
@@ -177,21 +255,21 @@ async def database_admin_page(request: Request):
     try:
         # 通过API层获取数据库统计信息
         from api.knowledge import get_all_knowledge
-        from api.technician import get_all_technicians
-        
+        from api.tea_master import get_all_tea_masters
+
         # 获取知识库数据
         knowledge_data = await get_all_knowledge()
-        
-        # 获取技师数据
-        technicians = await get_all_technicians()
-        
+
+        # 获取茶艺师数据
+        tea_masters = await get_all_tea_masters()
+
         stats = {
             "knowledge_documents": knowledge_data.get("total_count", 0),
             "categories": len(knowledge_data.get("categories", [])),
-            "technicians": len(technicians),
+            "tea_masters": len(tea_masters),
             "appointments": 0  # TODO: 通过API获取预约数量
         }
-        
+
         return templates.TemplateResponse("database_admin.html", {
             "request": request,
             "stats": stats

@@ -44,8 +44,8 @@ class TaskClassifier:
                 "4. statistics（统计任务）\n"
                 "5. other（其它任务）\n"
                 "只返回类别英文名。\n\n"
-                "举例说明：假如task为'我要预约8号工作人员1小时的推拿'，则输出appointment。\n"
-                "假如输入为我想问一下按摩房在哪里，则输入query。\n"
+                "举例说明：假如task为'我要预约8号茶艺师1小时的品茶服务'，则输出appointment。\n"
+                "假如输入为我想问一下茶室在哪里，则输入query。\n"
                 "以下是本次归类任务:\n"
                 "任务内容：{task}"
             )
@@ -83,6 +83,6 @@ class TaskClassifier:
             'query': '查询任务 - 用户咨询服务信息、价格、工作人员等',
             'pay': '支付任务 - 完成预约后的支付相关事务',
             'statistics': '统计任务 - 工作人员上报工作完成状态',
-            'other': '其他任务 - 与按摩服务无关的请求'
+            'other': '其他任务 - 与茶艺服务无关的请求'
         }
         return descriptions.get(category, '未知任务类型')

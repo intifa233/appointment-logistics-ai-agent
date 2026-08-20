@@ -17,19 +17,19 @@ logger = logging.getLogger(__name__)
 class UserBehaviorService:
     """用户行为服务类"""
     
-    def __init__(self, db_path: str = 'sqlite:///data/smart_appointment.db'):
+    def __init__(self, db_path: str = 'sqlite:///data/tea_house.db'):
         self.db_router = DatabaseRouter(db_path)
         self.user_behavior_repo = self.db_router.user_behavior
-    
+
     def record_behavior(self, user_id: str, action_type: str, action_data: Dict[str, Any] = None,
-                       technician_id: str = None, session_id: str = "default_session") -> bool:
+                       tea_master_id: str = None, session_id: str = "default_session") -> bool:
         """记录用户行为"""
         try:
             behavior_id = self.user_behavior_repo.record_behavior(
                 user_id=user_id,
                 action_type=action_type,
                 action_data=action_data,
-                technician_id=technician_id,
+                tea_master_id=tea_master_id,
                 session_id=session_id
             )
             
@@ -82,16 +82,16 @@ class UserBehaviorService:
             appointment_behaviors = [b for b in behaviors if b.get('action_type') == 'appointment']
             freq_analysis = self._analyze_frequency(appointment_behaviors)
             
-            # 分析偏好技师
-            preferred_technician = self._analyze_preferred_technician(appointment_behaviors)
-            
+            # 分析偏好茶艺师
+            preferred_tea_master = self._analyze_preferred_tea_master(appointment_behaviors)
+
             # 分析时间偏好
             time_preference = self._analyze_time_preference(appointment_behaviors)
-            
+
             return {
                 "pattern": "active_user" if len(appointment_behaviors) > 2 else "occasional_user",
                 "frequency_analysis": freq_analysis,
-                "preferred_technician": preferred_technician,
+                "preferred_tea_master": preferred_tea_master,
                 "time_preference": time_preference,
                 "total_appointments": len(appointment_behaviors),
                 "analysis_period_days": 30
@@ -137,21 +137,21 @@ class UserBehaviorService:
         
         return {"frequency": frequency, "days_between": avg_interval}
     
-    def _analyze_preferred_technician(self, appointment_behaviors: List[Dict[str, Any]]) -> Optional[str]:
-        """分析偏好技师"""
-        technician_counts = {}
-        
+    def _analyze_preferred_tea_master(self, appointment_behaviors: List[Dict[str, Any]]) -> Optional[str]:
+        """分析偏好茶艺师"""
+        tea_master_counts = {}
+
         for behavior in appointment_behaviors:
-            technician_id = behavior.get('technician_id')
-            if technician_id:
-                technician_counts[technician_id] = technician_counts.get(technician_id, 0) + 1
-        
-        if not technician_counts:
+            tea_master_id = behavior.get('tea_master_id')
+            if tea_master_id:
+                tea_master_counts[tea_master_id] = tea_master_counts.get(tea_master_id, 0) + 1
+
+        if not tea_master_counts:
             return None
-        
-        # 返回预约次数最多的技师
-        most_frequent_technician = max(technician_counts, key=technician_counts.get)
-        return most_frequent_technician if technician_counts[most_frequent_technician] > 1 else None
+
+        # 返回预约次数最多的茶艺师
+        most_frequent_tea_master = max(tea_master_counts, key=tea_master_counts.get)
+        return most_frequent_tea_master if tea_master_counts[most_frequent_tea_master] > 1 else None
     
     def _analyze_time_preference(self, appointment_behaviors: List[Dict[str, Any]]) -> Dict[str, Any]:
         """分析时间偏好"""

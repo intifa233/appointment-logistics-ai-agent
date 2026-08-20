@@ -1,36 +1,48 @@
 from .base import SessionManager
-from .repositories import TechnicianRepository, KnowledgeRepository, UserBehaviorRepository
+from .repositories import TeaMasterRepository, TeaRoomRepository, InventoryRepository, KnowledgeRepository, UserBehaviorRepository
 from typing import Optional
 
 
 class DatabaseRouter:
     """
     数据库路由器
-    
+
     职责：
     1. 管理数据库连接和会话
     2. 提供统一的数据访问入口
     3. 协调各个Repository的操作
     """
-    
-    def __init__(self, db_path: str = 'sqlite:///data/smart_appointment.db'):
+
+    def __init__(self, db_path: str = 'sqlite:///data/tea_house.db'):
         """
         初始化数据库路由器
-        
+
         Args:
             db_path: 数据库连接路径
         """
         self.session_manager = SessionManager(db_path)
-        
+
         # 初始化各个Repository
-        self.technician_repo = TechnicianRepository(self.session_manager)
+        self.tea_master_repo = TeaMasterRepository(self.session_manager)
+        self.tea_room_repo = TeaRoomRepository(self.session_manager)
+        self.inventory_repo = InventoryRepository(self.session_manager)
         self.knowledge_repo = KnowledgeRepository(self.session_manager)
         self.user_behavior_repo = UserBehaviorRepository(self.session_manager)
 
     @property
-    def technicians(self) -> TechnicianRepository:
-        """获取技师数据仓库"""
-        return self.technician_repo
+    def tea_masters(self) -> TeaMasterRepository:
+        """获取茶艺师数据仓库"""
+        return self.tea_master_repo
+
+    @property
+    def tea_rooms(self) -> TeaRoomRepository:
+        """获取茶室数据仓库"""
+        return self.tea_room_repo
+
+    @property
+    def inventory(self) -> InventoryRepository:
+        """获取库存数据仓库"""
+        return self.inventory_repo
 
     @property
     def knowledge(self) -> KnowledgeRepository:
@@ -48,54 +60,114 @@ class DatabaseRouter:
 
 
 # 为了兼容性，保留原有的类名
-class TechnicianDBRouter:
+class TeaMasterDBRouter:
     """
-    技师数据库路由器（兼容性类）
-    
+    茶艺师数据库路由器（兼容性类）
+
     为保持向后兼容，继续支持原有的接口
     """
-    
+
     def __init__(self, db_type='local', **kwargs):
         self.db_router = DatabaseRouter(**kwargs)
-        self.technician_repo = self.db_router.technicians
+        self.tea_master_repo = self.db_router.tea_masters
 
-    # 技师相关方法
-    def add_technician(self, name, gender=None, strength=None) -> None:
-        return self.technician_repo.add_technician(name, gender, strength)
+    # 茶艺师相关方法
+    def add_tea_master(self, name, gender=None, specialty=None) -> None:
+        return self.tea_master_repo.add_tea_master(name, gender, specialty)
 
-    def get_technician_by_name(self, name: str):
-        return self.technician_repo.get_technician_by_name(name)
+    def get_tea_master_by_name(self, name: str):
+        return self.tea_master_repo.get_tea_master_by_name(name)
 
-    def get_technician_by_id(self, technician_id: int):
-        return self.technician_repo.get_technician_by_id(technician_id)
+    def get_tea_master_by_id(self, tea_master_id: int):
+        return self.tea_master_repo.get_tea_master_by_id(tea_master_id)
 
-    def get_all_technicians(self):
-        return self.technician_repo.get_all_technicians()
+    def get_all_tea_masters(self):
+        return self.tea_master_repo.get_all_tea_masters()
 
-    def get_all_strengths(self):
-        return self.technician_repo.get_all_strengths()
+    def get_all_specialties(self):
+        return self.tea_master_repo.get_all_specialties()
 
     # 排班相关方法
-    def add_schedule(self, technician_id: int, start_time, end_time, status, appointment_id=None) -> None:
-        return self.technician_repo.add_schedule(technician_id, start_time, end_time, status, appointment_id)
+    def add_schedule(self, tea_master_id: int, start_time, end_time, status, appointment_id=None) -> None:
+        return self.tea_master_repo.add_schedule(tea_master_id, start_time, end_time, status, appointment_id)
 
-    def get_technician_schedules(self, technician_id: int, date):
-        return self.technician_repo.get_technician_schedules(technician_id, date)
+    def get_tea_master_schedules(self, tea_master_id: int, date):
+        return self.tea_master_repo.get_tea_master_schedules(tea_master_id, date)
 
-    def is_technician_available(self, technician_id: int, start_time, end_time) -> bool:
-        return self.technician_repo.is_technician_available(technician_id, start_time, end_time)
+    def is_tea_master_available(self, tea_master_id: int, start_time, end_time) -> bool:
+        return self.tea_master_repo.is_tea_master_available(tea_master_id, start_time, end_time)
 
-    def get_technicians_by_gender(self, gender: str):
-        return self.technician_repo.get_technicians_by_gender(gender)
+    def get_tea_masters_by_gender(self, gender: str):
+        return self.tea_master_repo.get_tea_masters_by_gender(gender)
+
+
+class TeaRoomDBRouter:
+    """
+    茶室数据库路由器（兼容性类）
+
+    为保持向后兼容，继续支持原有的接口
+    """
+
+    def __init__(self, db_type='local', **kwargs):
+        self.db_router = DatabaseRouter(**kwargs)
+        self.tea_room_repo = self.db_router.tea_rooms
+
+    def add_room(self, name, room_type=None, capacity=None, equipment=None) -> None:
+        return self.tea_room_repo.add_room(name, room_type, capacity, equipment)
+
+    def get_room_by_id(self, room_id: int):
+        return self.tea_room_repo.get_room_by_id(room_id)
+
+    def get_all_rooms(self):
+        return self.tea_room_repo.get_all_rooms()
+
+    def get_rooms_by_type(self, room_type: str):
+        return self.tea_room_repo.get_rooms_by_type(room_type)
+
+    def add_room_schedule(self, room_id: int, start_time, end_time, status, appointment_id=None) -> None:
+        return self.tea_room_repo.add_room_schedule(room_id, start_time, end_time, status, appointment_id)
+
+    def get_room_schedules(self, room_id: int, date):
+        return self.tea_room_repo.get_room_schedules(room_id, date)
+
+    def is_room_available(self, room_id: int, start_time, end_time) -> bool:
+        return self.tea_room_repo.is_room_available(room_id, start_time, end_time)
+
+
+class InventoryDBRouter:
+    """
+    库存数据库路由器（兼容性类）
+
+    为保持向后兼容，继续支持原有的接口
+    """
+
+    def __init__(self, db_type='local', **kwargs):
+        self.db_router = DatabaseRouter(**kwargs)
+        self.inventory_repo = self.db_router.inventory
+
+    def add_item(self, name, category=None, unit=None, stock_quantity=0, reorder_threshold=0, unit_price=None) -> None:
+        return self.inventory_repo.add_item(name, category, unit, stock_quantity, reorder_threshold, unit_price)
+
+    def get_item_by_id(self, item_id: int):
+        return self.inventory_repo.get_item_by_id(item_id)
+
+    def get_all_items(self):
+        return self.inventory_repo.get_all_items()
+
+    def adjust_stock(self, item_id: int, delta: float) -> bool:
+        return self.inventory_repo.adjust_stock(item_id, delta)
+
+    def get_low_stock_items(self):
+        return self.inventory_repo.get_low_stock_items()
 
 
 class KnowledgeDBRouter:
     """
     知识库数据库路由器（兼容性类）
-    
+
     为保持向后兼容，继续支持原有的接口
     """
-    
+
     def __init__(self, db_type='local', **kwargs):
         self.db_router = DatabaseRouter(**kwargs)
         self.knowledge_repo = self.db_router.knowledge
@@ -131,16 +203,16 @@ class KnowledgeDBRouter:
 class UserBehaviorDBRouter:
     """
     用户行为数据库路由器（兼容性类）
-    
+
     为保持向后兼容，继续支持原有的接口
     """
-    
+
     def __init__(self, db_type='local', **kwargs):
         self.db_router = DatabaseRouter(**kwargs)
         self.user_behavior_repo = self.db_router.user_behavior
 
-    def record_behavior(self, user_id: str, action_type: str, action_data=None, technician_id=None, session_id=None) -> int:
-        return self.user_behavior_repo.record_behavior(user_id, action_type, action_data, technician_id, session_id)
+    def record_behavior(self, user_id: str, action_type: str, action_data=None, tea_master_id=None, session_id=None) -> int:
+        return self.user_behavior_repo.record_behavior(user_id, action_type, action_data, tea_master_id, session_id)
 
     def get_user_behaviors(self, user_id: str, action_type=None, days_back=None):
         return self.user_behavior_repo.get_user_behaviors(user_id, action_type, days_back)

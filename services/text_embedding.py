@@ -35,17 +35,17 @@ def embed_input(input_text: str, model: str = "text-embedding-ada-002",
     return embeddings.embed_query(input_text)
 
 
-def save_technician_embeddings(embeddings, indices, path="data/technician_embeddings.pkl"):
+def save_tea_master_embeddings(embeddings, indices, path="data/tea_master_embeddings.pkl"):
     """
-    保存技师嵌入向量和索引到本地
+    保存茶艺师嵌入向量和索引到本地
     """
     with open(path, "wb") as f:
         pickle.dump({"embeddings": embeddings, "indices": indices}, f)
 
 
-def load_technician_embeddings(path="data/technician_embeddings.pkl"):
+def load_tea_master_embeddings(path="data/tea_master_embeddings.pkl"):
     """
-    加载本地保存的技师嵌入向量和索引
+    加载本地保存的茶艺师嵌入向量和索引
     """
     if not os.path.exists(path):
         return None, None

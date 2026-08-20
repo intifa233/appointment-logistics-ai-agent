@@ -2,13 +2,15 @@
 FastAPI应用程序
 
 主应用程序入口，配置中间件、路由和异常处理
-自动初始化知识库和技师数据
+自动初始化知识库、茶艺师、茶室和库存数据
 """
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from services.knowledge_service import KnowledgeService
-from services.technician_service import TechnicianService
+from services.tea_master_service import TeaMasterService
+from services.tea_room_service import TeaRoomService
+from services.inventory_service import InventoryService
 from services.recommendation_service import RecommendationService
 from typing import List, Optional
 import logging
@@ -39,18 +41,28 @@ class SearchRequest(BaseModel):
 async def initialize_system():
     """系统启动时自动初始化"""
     try:
-        logger.info("🚀 正在初始化智能预约系统...")
-        
+        logger.info("🚀 正在初始化智能茶馆预约系统...")
+
         # 初始化知识库服务
         logger.info("📚 初始化知识库服务...")
         knowledge_service = KnowledgeService()
         await knowledge_service.initialize()
-        
-        # 初始化技师服务
-        logger.info("👨‍⚕️ 初始化技师服务...")
-        technician_service = TechnicianService()
-        technician_service.initialize_default_technicians()
-        
+
+        # 初始化茶艺师服务
+        logger.info("🍵 初始化茶艺师服务...")
+        tea_master_service = TeaMasterService()
+        tea_master_service.initialize_default_tea_masters()
+
+        # 初始化茶室服务
+        logger.info("🏮 初始化茶室服务...")
+        tea_room_service = TeaRoomService()
+        tea_room_service.initialize_default_rooms()
+
+        # 初始化库存服务
+        logger.info("📦 初始化茶叶库存服务...")
+        inventory_service = InventoryService()
+        inventory_service.initialize_default_items()
+
         # 初始化推荐服务
         logger.info("🎯 启动推荐调度服务...")
         recommendation_service = RecommendationService()
@@ -69,8 +81,8 @@ def create_app() -> FastAPI:
     """创建FastAPI应用实例"""
     
     app = FastAPI(
-        title="智能预约AI代理",
-        description="提供预约管理、智能咨询、用户行为分析等功能的API服务",
+        title="茶馆智能预约AI代理",
+        description="提供茶室预约管理、茶艺咨询、库存与排班管理、用户行为分析等功能的API服务",
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc"
@@ -99,6 +111,11 @@ def create_app() -> FastAPI:
     # 静态文件
     app.mount("/static", StaticFiles(directory="web/static"), name="static")
 
+    # 健康检查（供 Railway / Render 等云平台探活使用）
+    @app.get("/health", include_in_schema=False)
+    async def health_check():
+        return {"status": "ok"}
+
     # 添加启动事件
     @app.on_event("startup")
     async def startup_event():
@@ -111,5 +128,9 @@ def create_app() -> FastAPI:
 app = create_app()
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    # 云平台（如 Railway）会通过 PORT 环境变量注入监听端口，且要求绑定 0.0.0.0
+    # 而不是 127.0.0.1，否则平台的负载均衡无法连接到容器内的服务。
+    port = int(os.getenv("PORT", "8001"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
