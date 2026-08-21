@@ -133,4 +133,8 @@ if __name__ == "__main__":
     # 云平台（如 Railway）会通过 PORT 环境变量注入监听端口，且要求绑定 0.0.0.0
     # 而不是 127.0.0.1，否则平台的负载均衡无法连接到容器内的服务。
     port = int(os.getenv("PORT", "8001"))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # proxy_headers + forwarded_allow_ips：信任云平台（Railway等）转发的
+    # X-Forwarded-Proto 等头，否则应用会以为自己收到的是纯HTTP连接，
+    # 生成的重定向（如FastAPI的自动尾斜杠重定向）会是http://而非https://，
+    # 导致浏览器把它当作混合内容拦截，接口请求"卡住"没有任何报错。
+    uvicorn.run(app, host="0.0.0.0", port=port, proxy_headers=True, forwarded_allow_ips="*")
