@@ -6,265 +6,224 @@
     <title>用户行为分析 - 智能预约系统</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg: #f2f0ec;
+            --surface: #ffffff;
+            --border: #e4e1d9;
+            --text: #2b2a26;
+            --text-muted: #8b8578;
+            --accent: #5f7d5c;
+            --accent-hover: #4d6a4b;
+            --accent-soft: #eaf0e8;
+            --success: #3f7d4f;
+            --success-soft: #eaf3ec;
+            --error: #b3452b;
+            --error-soft: #f8ece7;
+            --info: #4a6f8a;
+            --info-soft: #eaf1f6;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
-        body { 
+
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
+            color: var(--text);
         }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.2);
         }
-        
+
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            padding: 30px;
-            color: white;
+            padding: 28px 30px;
+            border-bottom: 1px solid var(--border);
             text-align: center;
-            position: relative;
-            overflow: hidden;
         }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 3s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
+
         .header h2 {
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
+            color: var(--text);
         }
-        
+
+        .header h2 i { color: var(--accent); }
+
         .header p {
-            font-size: 16px;
-            opacity: 0.9;
-        }
-        
-        .content {
-            padding: 30px;
-        }
-        
-        .analysis-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .analysis-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 4s infinite;
-        }
-        
-        .refresh-btn {
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
             font-size: 14px;
+            color: var(--text-muted);
         }
-        
+
+        .content {
+            padding: 28px 30px;
+        }
+
+        .analysis-card {
+            background: var(--accent-soft);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 22px;
+            margin-bottom: 26px;
+        }
+
+        .analysis-card h3 { color: var(--accent); }
+
+        .refresh-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 9px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
         .refresh-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--surface);
         }
-        
+
         .debug-info {
-            font-size: 12px; 
-            color: rgba(255,255,255,0.7); 
+            font-size: 12px;
+            color: var(--text-muted);
             margin-top: 10px;
         }
-        
+
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 26px;
         }
-        
+
         .stat-card {
-            background: rgba(255,255,255,0.9);
-            border-radius: 15px;
-            padding: 25px;
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 20px;
             text-align: center;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid var(--border);
         }
-        
-        .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-        
+
         .stat-title {
-            color: #666;
-            font-size: 16px;
+            color: var(--text-muted);
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 15px;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
             margin-bottom: 10px;
         }
-        
-        .stat-value.primary { color: #4facfe; }
-        .stat-value.success { color: #11998e; }
-        .stat-value.warning { color: #f093fb; }
-        .stat-value.info { color: #667eea; }
-        
-        .reminder-section {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,252,0.9));
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        
-        .reminder-title {
+
+        .stat-value {
             font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .stat-value.primary { color: var(--accent); }
+        .stat-value.success { color: var(--success); }
+        .stat-value.warning { color: var(--info); }
+        .stat-value.info { color: var(--text); }
+
+        .reminder-section {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .reminder-title {
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 20px;
-            color: #333;
+            margin-bottom: 18px;
+            color: var(--text);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
-        
+
+        .reminder-title i { color: var(--accent); }
+
         .send-reminder-btn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: var(--accent);
             border: none;
-            border-radius: 25px;
-            padding: 15px 35px;
-            font-weight: bold;
+            border-radius: 8px;
+            padding: 11px 24px;
+            font-weight: 600;
             color: white;
-            transition: all 0.3s ease;
+            transition: background 0.15s ease;
             cursor: pointer;
-            font-size: 16px;
-            box-shadow: 0 8px 25px rgba(245, 87, 108, 0.3);
-            position: relative;
-            overflow: hidden;
+            font-size: 14px;
         }
-        
-        .send-reminder-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            transform: translate(-50%, -50%);
-        }
-        
-        .send-reminder-btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
+
         .send-reminder-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(245, 87, 108, 0.4);
+            background: var(--accent-hover);
         }
-        
+
         .reminder-message {
-            background: linear-gradient(135deg, rgba(17, 153, 142, 0.1), rgba(56, 239, 125, 0.1));
-            border-left: 4px solid #11998e;
-            border-radius: 0 15px 15px 0;
-            padding: 25px;
-            margin-top: 25px;
-            font-size: 16px;
+            background: var(--success-soft);
+            border-left: 3px solid var(--success);
+            border-radius: 0 8px 8px 0;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 14px;
             line-height: 1.6;
         }
-        
+
         .loading {
             opacity: 0.6;
             pointer-events: none;
             position: relative;
         }
-        
+
         .loading::after {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #4facfe;
+            width: 18px;
+            height: 18px;
+            border: 3px solid var(--accent);
             border-radius: 50%;
             border-top-color: transparent;
             animation: spin 1s linear infinite;
             transform: translate(-50%, -50%);
         }
-        
+
         @keyframes spin {
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
-        
+
         .nav-link {
-            color: rgba(255,255,255,0.8);
+            color: var(--text-muted);
             text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            transition: all 0.3s ease;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: color 0.15s ease, background 0.15s ease;
             font-weight: 500;
         }
-        
+
         .nav-link:hover, .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            transform: translateY(-1px);
+            background: var(--accent-soft);
+            color: var(--accent);
         }
     </style>
 </head>
@@ -312,8 +271,8 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div>
-                        <p style="color: #666; margin: 0;">基于用户偏好生成个性化回访消息</p>
-                        <span id="reminderStatus" class="badge" style="background: #6c757d; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-top: 8px;">等待分析</span>
+                        <p style="color: var(--text-muted); margin: 0;">基于用户偏好生成个性化回访消息</p>
+                        <span id="reminderStatus" class="badge" style="background: var(--text-muted); color: white; padding: 4px 12px; border-radius: 8px; font-size: 12px; margin-top: 8px; display: inline-block;">等待分析</span>
                     </div>
                     <button id="sendReminderBtn" class="send-reminder-btn" onclick="sendReminder()">
                         <i class="fas fa-paper-plane"></i> 生成回访消息
@@ -322,26 +281,26 @@
 
                 <!-- 提醒消息显示区域 -->
                 <div id="reminderMessage" class="reminder-message" style="display: none;">
-                    <h5 style="color: #11998e; margin-bottom: 15px;"><i class="fas fa-comment-dots"></i> 生成的回访消息：</h5>
-                    <p id="messageContent" style="margin-bottom: 15px; color: #333; font-size: 16px;"></p>
+                    <h5 style="color: var(--success); margin-bottom: 15px;"><i class="fas fa-comment-dots"></i> 生成的回访消息：</h5>
+                    <p id="messageContent" style="margin-bottom: 15px; color: var(--text); font-size: 14px;"></p>
                     <div id="availableTimes"></div>
                 </div>
-                
+
                 <!-- 用户统计信息 -->
-                <div style="margin-top: 30px; padding: 25px; background: rgba(255,255,255,0.8); border-radius: 15px; border: 1px solid rgba(255,255,255,0.3);">
-                    <h4 style="color: #333; margin-bottom: 20px;"><i class="fas fa-chart-bar"></i> 用户统计信息</h4>
+                <div style="margin-top: 26px; padding: 20px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border);">
+                    <h4 style="color: var(--text); margin-bottom: 18px; font-size: 14px;"><i class="fas fa-chart-bar"></i> 用户统计信息</h4>
                     <div class="stats-grid" style="margin: 0;">
                         <div style="text-align: center;">
-                            <div id="totalAppointments" style="font-size: 28px; font-weight: bold; color: #4facfe; margin-bottom: 8px;">0</div>
-                            <div style="color: #666; font-size: 14px;">总预约次数</div>
+                            <div id="totalAppointments" style="font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 6px;">0</div>
+                            <div style="color: var(--text-muted); font-size: 13px;">总预约次数</div>
                         </div>
                         <div style="text-align: center;">
-                            <div id="shouldSendReminder" style="font-size: 28px; font-weight: bold; color: #11998e; margin-bottom: 8px;">否</div>
-                            <div style="color: #666; font-size: 14px;">建议发送提醒</div>
+                            <div id="shouldSendReminder" style="font-size: 22px; font-weight: 700; color: var(--success); margin-bottom: 6px;">否</div>
+                            <div style="color: var(--text-muted); font-size: 13px;">建议发送提醒</div>
                         </div>
                         <div style="text-align: center;">
-                            <div style="font-size: 28px; font-weight: bold; color: #667eea; margin-bottom: 8px;">default_user</div>
-                            <div style="color: #666; font-size: 14px;">当前分析用户</div>
+                            <div style="font-size: 22px; font-weight: 700; color: var(--info); margin-bottom: 6px;">default_user</div>
+                            <div style="color: var(--text-muted); font-size: 13px;">当前分析用户</div>
                         </div>
                     </div>
                 </div>
@@ -361,8 +320,8 @@
             try {
                 console.log('开始加载用户分析数据...');
                 
-                // 使用与服务器一致的地址和端口
-                const apiUrl = 'http://127.0.0.1:8000/api/user-behavior/analysis';
+                // 使用相对路径，避免硬编码端口/主机导致部署环境下请求失败
+                const apiUrl = '/api/user-behavior/analysis';
                 console.log('调用API:', apiUrl);
                 
                 const response = await fetch(apiUrl, {
@@ -407,7 +366,7 @@
                 const statusElement = document.getElementById('reminderStatus');
                 if (statusElement) {
                     statusElement.textContent = data.should_send_reminder ? '建议发送' : '无需提醒';
-                    statusElement.style.background = data.should_send_reminder ? '#11998e' : '#6c757d';
+                    statusElement.style.background = data.should_send_reminder ? '#3f7d4f' : '#8b8578';
                 }
                 
                 console.log('页面更新完成');
@@ -438,7 +397,7 @@
                 button.disabled = true;
                 button.classList.add('loading');
                 
-                const response = await fetch('http://127.0.0.1:8000/api/user-behavior/send-reminder', {
+                const response = await fetch('/api/user-behavior/send-reminder', {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -466,7 +425,7 @@
                 if (data.tea_master_available_times && data.tea_master_available_times.length > 0) {
                     availableTimes.innerHTML = `
                         <strong>建议预约时间：</strong><br>
-                        ${data.tea_master_available_times.map(time => `<span style="background: #f093fb; color: white; padding: 4px 8px; border-radius: 8px; margin: 2px; display: inline-block;">${time}</span>`).join('')}
+                        ${data.tea_master_available_times.map(time => `<span style="background: var(--accent); color: white; padding: 4px 8px; border-radius: 8px; margin: 2px; display: inline-block;">${time}</span>`).join('')}
                     `;
                 } else {
                     availableTimes.innerHTML = '';
@@ -478,7 +437,7 @@
                 const statusElement = document.getElementById('reminderStatus');
                 if (statusElement) {
                     statusElement.textContent = '已发送';
-                    statusElement.style.background = '#11998e';
+                    statusElement.style.background = '#3f7d4f';
                 }
 
             } catch (error) {
