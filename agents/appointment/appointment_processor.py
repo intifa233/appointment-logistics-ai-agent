@@ -105,7 +105,7 @@ class AppointmentProcessor:
             return self._handle_recommendation_response(appointment_history, data)
 
         # 只更新有值的字段，避免覆盖之前的信息
-        for key in ["duration", "gender", "start_time", "project", "tea_master_name", "wants_tea_master"]:
+        for key in ["duration", "gender", "start_time", "project", "guest_count", "tea_master_name", "wants_tea_master"]:
             if data.get(key) and data[key] != "未知":
                 appointment_history[key] = data[key]
 
@@ -119,11 +119,11 @@ class AppointmentProcessor:
             appointment_history["wants_tea_master"] = "需要"
 
         # 检查是否收集齐所有必需信息
-        # 必需信息：时间、项目、时长
+        # 必需信息：时间、项目、时长、人数（人数用于匹配容量合适的茶室）
         # 茶艺师是可选项：
         #   - 指定了茶艺师名：不需要额外询问，视为需要
         #   - 未指定茶艺师名：先询问是否需要专属茶艺师；需要的话再问性别用于筛选；不需要则跳过
-        required_fields = ["start_time", "project", "duration"]
+        required_fields = ["start_time", "project", "duration", "guest_count"]
         wants_tea_master = appointment_history.get("wants_tea_master")
 
         if not tea_master_name or tea_master_name == "未知":
@@ -300,7 +300,12 @@ class AppointmentProcessor:
             self.appointment_database.update_memory_schedule(tea_master_id, start_time, end_time)
 
         # 尝试为本次预约匹配一个可用茶室（茶室是独立于茶艺师的资源，不管是否需要茶艺师都会安排）
-        room = self.room_finder.find_available_room(start_time, end_time, appointment_history.get("project"))
+        # 优先按人数匹配容量合适的茶室，再结合服务项目挑选合适房型
+        room = self.room_finder.find_available_room(
+            start_time, end_time,
+            project=appointment_history.get("project"),
+            guest_count=appointment_history.get("guest_count")
+        )
         if room:
             self.appointment_database.save_room_reservation(room["id"], start_time, end_time)
 
@@ -350,6 +355,8 @@ class AppointmentProcessor:
             missing.append("project")
         if not appointment_history.get("duration") or appointment_history.get("duration") == "未知":
             missing.append("duration")
+        if not appointment_history.get("guest_count") or appointment_history.get("guest_count") == "未知":
+            missing.append("guest_count")
 
         # 如果没有指定茶艺师名：先确认是否需要专属茶艺师，需要的话再问性别
         if not tea_master_name or tea_master_name == "未知":
